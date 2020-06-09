@@ -58,11 +58,11 @@ app.get('/requests/:id', (req, res) => {
 });
 
 app.post('/request', (req, res) => {
-	createRequest(req.body);
+	res.send('{"id":"' + createRequest(req.body) + '"}');
 });
 
 app.put('/request', (req, res) => {
-	updateRequest(req.body);
+	res.send('{"id":"' + updateRequest(req.body) + '"}');
 });
 
 app.listen(port, () => console.log(`Time requester services listening on port ${port}!`));
@@ -70,7 +70,7 @@ app.listen(port, () => console.log(`Time requester services listening on port ${
 function getRequest(id) {
 	var request = "{}";
 	inputRequests.forEach(r => {
-		if (r.id == req.params.id) {
+		if (r.id == id) {
 			request = r;
 		}
 	});
@@ -89,7 +89,7 @@ function updateRequest(inputRequest) {
 	    request.status = inputRequest.status ? inputRequest.status : request.status,
 	    // Output the new request to the console for debugging
 	    console.log(inputRequest);
-	    res.send('{"status":"ok"}');
+	    return request.id
 	} else {
 		createRequest(inputRequest);
 	}
@@ -110,5 +110,5 @@ function createRequest(inputRequest) {
     // Output the new request to the console for debugging
     console.log(inputRequest);
     inputRequests.push(inputRequest);
-    res.send('{"status":"ok"}');
+    return newRequest.id;
 }
