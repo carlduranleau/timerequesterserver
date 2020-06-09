@@ -108,7 +108,7 @@ function createRequest(inputRequest) {
     	created: new Date
     }
     // Output the new request to the console for debugging
-    console.log(inputRequest);
-    inputRequests.push(inputRequest);
+    console.log(newRequest);
+    inputRequests.push(newRequest);
     return newRequest.id;
 }
