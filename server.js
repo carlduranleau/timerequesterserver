@@ -65,6 +65,11 @@ app.put('/request', (req, res) => {
 	res.send('{"id":"' + updateRequest(req.body) + '"}');
 });
 
+app.delete('/request/:id', (req, res) => {
+	deleteRequest(req.params.id);
+	res.send('{"id":"' + req.params.id + '"}');
+});
+
 app.listen(port, () => console.log(`Time requester services listening on port ${port}!`));
 
 function getRequest(id) {
@@ -75,6 +80,17 @@ function getRequest(id) {
 		}
 	});
 	return request;
+}
+
+function deleteRequest(id) {
+	var newRequests = [];
+	var request = "{}";
+	inputRequests.forEach(r => {
+		if (r.id != id) {
+			newRequests.push(r);
+		}
+	});
+	inputRequest = newRequests;
 }
 
 function updateRequest(inputRequest) {
@@ -91,7 +107,7 @@ function updateRequest(inputRequest) {
 	    console.log(inputRequest);
 	    return request.id
 	} else {
-		createRequest(inputRequest);
+		return createRequest(inputRequest);
 	}
 }
 
