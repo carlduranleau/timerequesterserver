@@ -16,48 +16,6 @@ let database = {
 	activityLogs: []
 };
 
-// Test data
-/**
-database.requestData = [
-	{
-		id: 1,
-    	firstname: "Alex",
-    	lastname: "Duranleau",
-    	email: "alex.duranleau@gmail.com",
-    	phone: "418-839-0767",
-    	onsite: "yes",
-    	description: "I want the WIFI password.",
-    	status: "New",
-    	date: moment().format('YYYY-MM-DDTHH:MM'),
-    	created: new Date
-    },
-	{
-		id: 2,
-    	firstname: "Maélie",
-    	lastname: "Duranleau",
-    	email: "maelie.duranleau@gmail.com",
-    	phone: "418-839-0767",
-    	onsite: "yes",
-    	description: "I need help with my english homework.",
-    	status: "New",
-    	date: moment().format('YYYY-MM-DDTHH:MM'),
-    	created: new Date
-    },
-	{
-		id: 3,
-    	firstname: "Laura",
-    	lastname: "Duranleau",
-    	email: "laura.duranleau@gmail.com",
-    	phone: "418-839-0767",
-    	onsite: "yes",
-    	description: "I want a hug!",
-    	status: "New",
-    	date: moment().format('YYYY-MM-DDTHH:MM'),
-    	created: new Date
-    }
-];
-*/
-
 app.use(cors());
 
 // Configuring body parser middleware
