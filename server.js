@@ -1,10 +1,12 @@
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const moment = require('moment');
 
 const app = express();
 const port = 8080;
 
+var today = new Date();
 // Where we will keep requests
 let inputRequests = [
 	{
@@ -16,6 +18,7 @@ let inputRequests = [
     	onsite: "yes",
     	description: "I want the WIFI password.",
     	status: "New",
+    	date: moment().format('YYYY-MM-DDTHH:MM'),
     	created: new Date
     },
 	{
@@ -27,6 +30,7 @@ let inputRequests = [
     	onsite: "yes",
     	description: "I need help with my english homework.",
     	status: "New",
+    	date: moment().format('YYYY-MM-DDTHH:MM'),
     	created: new Date
     },
 	{
@@ -38,6 +42,7 @@ let inputRequests = [
     	onsite: "yes",
     	description: "I want a hug!",
     	status: "New",
+    	date: moment().format('YYYY-MM-DDTHH:MM'),
     	created: new Date
     }
 ];
@@ -103,6 +108,7 @@ function updateRequest(inputRequest) {
 	    request.onsite = inputRequest.onsite ? inputRequest.onsite : request.onsite,
 	    request.description = inputRequest.description ? inputRequest.description : request.description,
 	    request.status = inputRequest.status ? inputRequest.status : request.status,
+	    request.date = inputRequest.date ? inputRequest.date : request.date,
 	    // Output the new request to the console for debugging
 	    console.log(inputRequest);
 	    return request.id
@@ -120,6 +126,7 @@ function createRequest(inputRequest) {
     	phone: inputRequest.phone,
     	onsite: inputRequest.onsite,
     	description: inputRequest.description,
+    	date: inputRequest.date,
     	status: "New",
     	created: new Date
     }
