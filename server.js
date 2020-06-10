@@ -2,13 +2,23 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const moment = require('moment');
+const fs = require('fs');
 
+// Web server
 const app = express();
-const port = 8080;
 
-var today = new Date();
-// Where we will keep requests
-let inputRequests = [
+const SERVER_PORT = 8080;
+const DATABASE_NAME = "timerequester.db";
+
+// In-memory database
+let database = {
+	requestData: [],
+	activityLogs: []
+};
+
+// Test data
+/**
+database.requestData = [
 	{
 		id: 1,
     	firstname: "Alex",
@@ -46,7 +56,7 @@ let inputRequests = [
     	created: new Date
     }
 ];
-
+*/
 
 app.use(cors());
 
@@ -55,7 +65,11 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.get('/requests', (req, res) => {
-	res.json(inputRequests);
+	res.json(database.requestData);
+});
+
+app.get('/logs', (req, res) => {
+	res.json(database.activityLogs);
 });
 
 app.get('/requests/:id', (req, res) => {
@@ -75,11 +89,18 @@ app.delete('/request/:id', (req, res) => {
 	res.send('{"id":"' + req.params.id + '"}');
 });
 
-app.listen(port, () => console.log(`Time requester services listening on port ${port}!`));
+app.listen(SERVER_PORT, function() {
+	loadDatabase(DATABASE_NAME);
+	addLogActivity({
+		type: "system",
+		action: "server start"
+	});
+	console.log(`Time requester services listening on port ${SERVER_PORT}!`);
+});
 
 function getRequest(id) {
 	var request = "{}";
-	inputRequests.forEach(r => {
+	database.requestData.forEach(r => {
 		if (r.id == id) {
 			request = r;
 		}
@@ -89,13 +110,22 @@ function getRequest(id) {
 
 function deleteRequest(id) {
 	var newRequests = [];
-	var request = "{}";
-	inputRequests.forEach(r => {
+	var found = false;
+	database.requestData.forEach(r => {
 		if (r.id != id) {
 			newRequests.push(r);
+		} else {
+			found = true;
 		}
 	});
-	inputRequest = newRequests;
+	if (found) {
+		database.requestData = newRequests;
+		addLogActivity({
+			type: "data",
+			action: "deleteRequest(" + id + ")"
+		});
+		refreshDatabase(DATABASE_NAME, database, false);
+	}
 }
 
 function updateRequest(inputRequest) {
@@ -110,7 +140,12 @@ function updateRequest(inputRequest) {
 	    request.status = inputRequest.status ? inputRequest.status : request.status,
 	    request.date = inputRequest.date ? inputRequest.date : request.date,
 	    // Output the new request to the console for debugging
-	    console.log(inputRequest);
+	    console.log(request);
+		addLogActivity({
+			type: "data",
+			action: "updateRequest(" + request.id + ")"
+		});
+	    refreshDatabase(DATABASE_NAME, database, false);
 	    return request.id
 	} else {
 		return createRequest(inputRequest);
@@ -132,6 +167,56 @@ function createRequest(inputRequest) {
     }
     // Output the new request to the console for debugging
     console.log(newRequest);
-    inputRequests.push(newRequest);
+    database.requestData.push(newRequest);
+	addLogActivity({
+		type: "data",
+		action: "createRequest(" + newRequest.id + ")"
+	});
+    refreshDatabase(DATABASE_NAME, database, false);
     return newRequest.id;
 }
+
+function addLogActivity(activity) {
+	var newActivity = {
+		type: activity.type,
+		action: activity.action,
+		date: new Date
+	}
+	database.activityLogs.push(newActivity);
+}
+
+function refreshDatabase(name, data, sync) {
+	if (sync) {
+		fs.writeFileSync(name, JSON.stringify(data));
+		console.log("Database '" + name + "' updated.");
+	} else {
+		fs.writeFile(name, JSON.stringify(data), function (err) {
+			if (err) throw err;
+			console.log("Database '" + name + "' updated.");
+		});
+	}
+}
+
+function loadDatabase(name) {
+	try {
+		console.log("Loading database...");
+		var rawData = fs.readFileSync(name);
+		database = JSON.parse(rawData);
+		console.log(database.requestData.length + " requests loaded.");
+		console.log(database.activityLogs.length + " activities loaded.");
+	} catch (err) {
+		console.log("No database found.");
+	}
+}
+
+var onShutdown = function() {
+	addLogActivity({
+		type: "system",
+		action: "server stop"
+	});
+	refreshDatabase(DATABASE_NAME, database, true);
+	process.exit();
+}
+
+// listen for TERM signal .e.g. kill
+process.on ('SIGINT', onShutdown);
