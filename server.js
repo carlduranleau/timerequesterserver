@@ -9,12 +9,17 @@ const app = express();
 
 const SERVER_PORT = 8080;
 const DATABASE_NAME = "timerequester.db";
+const SESSION_TIMEOUT = 1800	//Session timeout in seconds
 
 // In-memory database
 let database = {
 	requestData: [],
-	activityLogs: []
+	activityLogs: [],
+	users: []
 };
+
+// Authentication tokens
+let authtokens = [];
 
 app.use(cors());
 
@@ -23,28 +28,61 @@ app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.get('/requests', (req, res) => {
-	res.json(database.requestData);
+	if (!checkToken(req.query.token)) {
+		console.log("Error!");
+		res.status(403).send("{}");
+	} else {
+		console.log("Valid!");
+		res.json(database.requestData);
+	}
 });
 
 app.get('/logs', (req, res) => {
-	res.json(database.activityLogs);
+	if (!checkToken(req.query.token)) {
+		res.status(403).send("{}");
+	} else {
+		res.json(database.activityLogs);
+	}
 });
 
 app.get('/requests/:id', (req, res) => {
-	res.json(getRequest(req.params.id));
+	if (!checkToken(req.query.token)) {
+		res.status(403).send("{}");
+	} else {
+		res.json(getRequest(req.params.id));
+	}
 });
 
 app.post('/request', (req, res) => {
 	res.send('{"id":"' + createRequest(req.body) + '"}');
 });
 
+app.post('/login', (req, res) => {
+	var authinfo = req.body;
+	var token = login(authinfo);
+	if (token) {
+		res.send('{"token":"' + token + '"}');
+	} else {
+		res.status(403);
+		res.send('{"token":""}');
+	}
+});
+
 app.put('/request', (req, res) => {
-	res.send('{"id":"' + updateRequest(req.body) + '"}');
+	if (!checkToken(req.query.token)) {
+		res.status(403).send("{}");
+	} else {
+		res.send('{"id":"' + updateRequest(req.body) + '"}');
+	}
 });
 
 app.delete('/request/:id', (req, res) => {
-	deleteRequest(req.params.id);
-	res.send('{"id":"' + req.params.id + '"}');
+	if (!checkToken(req.query.token)) {
+		res.status(403).send("{}");
+	} else {
+		deleteRequest(req.params.id);
+		res.send('{"id":"' + req.params.id + '"}');
+	}
 });
 
 app.listen(SERVER_PORT, function() {
@@ -162,9 +200,72 @@ function loadDatabase(name) {
 		database = JSON.parse(rawData);
 		console.log(database.requestData.length + " requests loaded.");
 		console.log(database.activityLogs.length + " activities loaded.");
+		console.log(database.users.length + " users loaded.");
 	} catch (err) {
 		console.log("No database found.");
 	}
+}
+
+function login(authinfo) {
+	var authtoken;
+	database.users.forEach(t => {
+		if (t.user == authinfo.user && t.pass == authinfo.pass) {
+			var newtoken = createUUID();
+			authtokens.push({
+				token: newtoken,
+				expiration: Date.now() + (SESSION_TIMEOUT * 1000)
+			});
+			authtoken = newtoken;
+		}
+	});
+	return authtoken;
+}
+
+function removeToken(token) {
+	var filteredtokens = [];
+	authtokens.forEach(a => {
+		if (a.token != token) {
+			filteredtokens.push(a);
+		}
+	});
+	authtokens = filteredtokens;
+}
+
+function checkToken(token) {
+	console.log("Token:");
+	console.log(token);
+	var status = false;
+	if (!token) {
+		return false;
+	}
+	var currentDate = Date.now();
+	console.log("currentDate:");
+	console.log(currentDate);
+	authtokens.forEach(a => {
+		if (a.token == token) {
+			console.log("expiration:");
+			console.log(a.expiration);
+			if (a.expiration > currentDate) {
+				console.log("Valid token");
+				a.expiration = Date.now() + (SESSION_TIMEOUT * 1000);
+				status = true;
+			} else {
+				console.log("Remove token");
+				removeToken(a.token);
+			}
+		}
+	});
+	return status;
+}
+
+function createUUID(){
+    var dt = new Date().getTime();
+    var uuid = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        var r = (dt + Math.random()*16)%16 | 0;
+        dt = Math.floor(dt/16);
+        return (c=='x' ? r :(r&0x3|0x8)).toString(16);
+    });
+    return uuid;
 }
 
 var onShutdown = function() {
